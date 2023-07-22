@@ -2,10 +2,11 @@ mod threadpool;
 use threadpool::ThreadPool;
 
 use std::{
-    thread,
     fs,
     io::{prelude::*, BufReader},
-    net::{TcpListener, TcpStream}, time::Duration,
+    net::{TcpListener, TcpStream},
+    thread,
+    time::Duration,
 };
 
 const LOCALHOST_ADDRESS: &str = "127.0.0.1:7878";
@@ -32,14 +33,12 @@ fn handle_connection(mut stream: TcpStream) {
         stream
             .write(parse_response("HTTP/1.1 200 OK", "./client/index.html").as_bytes())
             .unwrap();
-    }
-    else if request_line == "GET /sleep HTTP/1.1" {
+    } else if request_line == "GET /sleep HTTP/1.1" {
         thread::sleep(Duration::from_secs(5));
         stream
             .write(parse_response("HTTP/1.1 200 OK", "./client/index.html").as_bytes())
             .unwrap();
-    } 
-    else {
+    } else {
         stream
             .write(parse_response("HTTP/1.1 404 NOT FOUND", "./client/404.html").as_bytes())
             .unwrap();
