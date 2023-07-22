@@ -1,4 +1,3 @@
-
 use std::{
     sync::{
         mpsc::{self, Receiver},
@@ -8,7 +7,7 @@ use std::{
 };
 
 /// Error types that may occur while creating or executing tasks in the thread pool.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ThreadPoolError {
     /// Error indicating a problem occurred during the creation of the thread pool.
     CreationError(String),
@@ -17,12 +16,14 @@ pub enum ThreadPoolError {
 }
 
 /// A simple thread pool implementation.
+#[derive(Debug)]
 pub struct ThreadPool {
     workers: Vec<Worker>,
     sender: mpsc::Sender<Job>,
 }
 
 /// A worker thread in the thread pool.
+#[derive(Debug)]
 struct Worker {
     id: usize,
     thread: thread::JoinHandle<()>,
@@ -103,7 +104,7 @@ impl ThreadPool {
             let receiver_clone = Arc::clone(&receiver);
             let thread = builder
                 .spawn(move || loop {
-                    let job = receiver_clone.lock().unwrap().recv().unwrap();       
+                    let job = receiver_clone.lock().unwrap().recv().unwrap();
                     println!("Worker {id} got a job; executing.");
                     job();
                 })
@@ -115,3 +116,30 @@ impl ThreadPool {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::mpsc;
+
+    #[test]
+    fn test_thread_pool_creation_error_zero_size() {
+        // Trying to create a thread pool with zero worker threads should return an error.
+        let result = ThreadPool::build(0, 1024 * 1024);
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err(),
+            ThreadPoolError::CreationError(String::from("Thread pool size is zero"))
+        );
+    }
+
+    #[test]
+    fn test_thread_pool_creation_error_large_size() {
+        // Trying to create a thread pool with more than 10,000 worker threads should return an error.
+        let result = ThreadPool::build(20000, 1024 * 1024);
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err(),
+            ThreadPoolError::CreationError(String::from("Thread pool size is greater than 10,000"))
+        );
+    }
+}
